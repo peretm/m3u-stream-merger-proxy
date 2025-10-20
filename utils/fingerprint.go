@@ -6,8 +6,31 @@ import (
 	"fmt"
 	"m3u-stream-merger/logger"
 	"net/http"
+	"sort"
 	"strings"
 )
+
+func normalizeHeaderValue(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	parts := strings.Split(value, ",")
+	normalized := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(strings.ToLower(part))
+		if trimmed != "" {
+			normalized = append(normalized, trimmed)
+		}
+	}
+
+	if len(normalized) == 0 {
+		return ""
+	}
+
+	sort.Strings(normalized)
+	return strings.Join(normalized, ",")
+}
 
 func GenerateFingerprint(r *http.Request) string {
 	// Collect relevant attributes
@@ -16,8 +39,8 @@ func GenerateFingerprint(r *http.Request) string {
 		ip = xff
 	}
 	userAgent := r.Header.Get("User-Agent")
-	accept := r.Header.Get("Accept")
-	acceptLang := r.Header.Get("Accept-Language")
+	accept := normalizeHeaderValue(r.Header.Get("Accept"))
+	acceptLang := normalizeHeaderValue(r.Header.Get("Accept-Language"))
 	path := r.URL.Path
 
 	// Combine into a single string
